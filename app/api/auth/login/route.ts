@@ -30,12 +30,13 @@ export async function POST(req: Request) {
     // Set token as a cookie
     const cookie = serialize('token', token, {
       httpOnly: true,  // Prevent client-side JS from accessing it
-      secure: process.env.NODE_ENV === 'production', // Send only over HTTPS in production
+      secure: false,   // For local development, change this to true for production (when using HTTPS)
       maxAge: 60 * 60, // 1 hour expiry
-      path: '/', // Available across the entire app
+      path: '/',       // Available across the entire app
     });
 
-    const response = NextResponse.json({ message: 'Login successful!' });
+    // Create response with token
+    const response = NextResponse.json({ message: 'Login successful!', token: token });
     response.headers.set('Set-Cookie', cookie); // Set the cookie in the response
 
     return response;

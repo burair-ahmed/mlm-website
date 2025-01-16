@@ -8,27 +8,32 @@ const Dashboard = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Retrieve the token from localStorage
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      setError('You are not logged in.');
+      setLoading(false);
+      console.log('No token found in localStorage');
+      return;
+    }
+
+    console.log('Token found in localStorage:', token); // Log token found
+
     const fetchStats = async () => {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='));
-      if (!token) {
-        setError('You are not logged in.');
-        setLoading(false);
-        return;
-      }
-    
-      // Clean the token string
-      const cleanToken = token.split('=')[1];
-    
       try {
         const res = await fetch('/api/referrals/stats', {
           method: 'GET',
-          credentials: 'include',  // Ensure cookies are sent with the request
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Send token as Authorization header
+          },
+          credentials: 'include',  // Ensure cookies are sent with the request if needed
         });
-    
+
         if (!res.ok) {
           throw new Error(await res.text());
         }
-    
+
         const data = await res.json();
         setStats(data);
       } catch (err: any) {
@@ -37,7 +42,6 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-    
 
     fetchStats();
   }, []);

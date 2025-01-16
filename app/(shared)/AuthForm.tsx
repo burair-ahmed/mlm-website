@@ -28,7 +28,13 @@ const AuthForm = ({ type }: { type: 'register' | 'login' }) => {
   
     if (res.ok) {
       setMessage(data.message);
-  
+
+      // Store token in localStorage
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        console.log('Token saved to localStorage');
+      }
+
       // Redirect to dashboard on successful login
       if (type === 'login') {
         setMessage(data.message || 'Login Successful');
@@ -37,7 +43,6 @@ const AuthForm = ({ type }: { type: 'register' | 'login' }) => {
       setMessage(data.message || 'An error occurred. Please try again.');
     }
   };
-  
 
   return (
     <div>

@@ -10,38 +10,33 @@ export async function GET(req: Request) {
   try {
     await dbConnect();
 
-    // Await the cookies API to get the cookies
-    const cookieStore = await cookies();
-    
-    // Get the token from the cookieStore
+    // Await the cookies from the request headers
+    const cookieStore = await cookies();  // Ensure this is awaited
     const tokenCookie = cookieStore.get('token');
-    
+    console.log('Token Cookie:', tokenCookie);  // Log cookie value
+
     if (!tokenCookie) {
       console.error('Token is missing in the request.');
       return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
     }
 
-    // Extract the token value from cookie
     const token = tokenCookie.value;
+    console.log('Extracted Token:', token);  // Log extracted token
 
     // Verify the token
     let decoded;
     try {
-      // First cast to 'unknown' and then to the expected type { id: string }
       decoded = jwt.verify(token, JWT_SECRET) as unknown;
-
-      // Now cast to { id: string } after the verification
       const decodedToken = decoded as { id: string };
 
-      // Find the user based on the decoded id
       const user = await User.findById(decodedToken.id).populate('referrals');
       if (!user) {
         console.error('User not found with id:', decodedToken.id);
         return NextResponse.json({ message: 'User not found.' }, { status: 404 });
       }
-      console.log('Token extracted:', token);
 
-      // Prepare the stats object
+      console.log('User found:', user);  // Log user data
+
       const stats = {
         referralCode: user.referralCode,
         referralsCount: user.referrals.length,
