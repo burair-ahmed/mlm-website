@@ -1,56 +1,28 @@
+// app/api/referrals/tree/route.ts
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '../../../../lib/mongodb';
-import User from '../../../../models/User';
+import { getReferralTree } from '../../../../lib/referralTree';
 import { cookies } from 'next/headers';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-async function getReferralTree(userId: string) {
-  // Fetch the user by ID and populate their referrals
-  const user = await User.findById(userId).populate('referrals');
-  
-  // Recursively build the tree for each referral
-  const tree = {
-    name: user.name,
-    referrals: await Promise.all(
-      user.referrals.map(async (referral: any) => {
-        const referralTree = await getReferralTree(referral._id);
-        return referralTree;
-      })
-    ),
-  };
-
-  return tree;
-}
-
-export async function GET(req: Request) {
+export async function GET() {
   try {
     await dbConnect();
 
-    const cookieStore = await cookies();  // Await the cookies from the request headers
-    const tokenCookie = cookieStore.get('token');
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
 
-    if (!tokenCookie) {
-      return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
-    }
+    if (!token) return NextResponse.json({ message: 'Unauthorized.' }, { status: 401 });
 
-    const token = tokenCookie.value;
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.id;
 
-    // Verify the token
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET) as unknown;
-      const decodedToken = decoded as { id: string };
+    const referralTree = await getReferralTree(userId);
 
-      // Get the referral tree
-      const referralTree = await getReferralTree(decodedToken.id);
-
-      return NextResponse.json(referralTree);
-    } catch (err) {
-      return NextResponse.json({ message: 'Invalid token.' }, { status: 401 });
-    }
-  } catch (error) {
-    return NextResponse.json({ message: 'Error fetching referral tree.' }, { status: 500 });
+    return NextResponse.json(referralTree);
+  } catch (error: any) {
+    return NextResponse.json({ message: error.message || 'Failed to fetch referral tree.' }, { status: 500 });
   }
 }
